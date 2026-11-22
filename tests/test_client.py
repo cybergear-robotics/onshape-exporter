@@ -1,6 +1,6 @@
 import pytest
 
-from onshape_export.client import OnshapeError, _first_image, _translation_body
+from onshape_export.client import OnshapeClient, OnshapeError, _first_image, _translation_body
 
 
 def test_3mf_translation_uses_valid_mesh_parameters() -> None:
@@ -53,3 +53,10 @@ def test_first_exploded_view_image_accepts_nested_api_response() -> None:
 def test_missing_exploded_view_image_is_an_error() -> None:
     with pytest.raises(OnshapeError, match="no image"):
         _first_image([])
+
+
+def test_current_microversion_uses_onshape_response_field(monkeypatch) -> None:
+    client = OnshapeClient("https://cad.onshape.com", "access", "secret")
+    monkeypatch.setattr(client, "get_json", lambda path: {"microversion": "mid"})
+
+    assert client.get_current_microversion("did", "wid") == "mid"

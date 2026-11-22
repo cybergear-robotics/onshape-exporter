@@ -4,8 +4,8 @@
 [![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
-Exports an Onshape assembly as STEP and STL, its bill of materials as Markdown,
-and all parts marked with `Produktzeile = 3dprint` as STL, STEP, and 3MF.
+Exports an Onshape assembly as STEP, its bill of materials as Markdown, and all
+parts marked with `Produktzeile = 3dprint` as 3MF.
 
 ## Local usage
 
@@ -67,8 +67,23 @@ product_value = "3dprint"
 units = "millimeter"
 mesh_resolution = "fine"
 translation_timeout_seconds = 900
-poll_interval_seconds = 3
+poll_interval_seconds = 15
+
+[bom]
+columns = [
+  { property = "item", title = "Item" },
+  { property = "title1", title = "Component" },
+  { property = "description", title = "Description" },
+  { property = "quantity", title = "Quantity" },
+  { property = "material", title = "Material" },
+  { property = "mass", title = "Mass" },
+]
 ```
+
+The column order in `bom.columns` is also used in the generated Markdown. The
+exporter stores the last exported workspace microversion in
+`.onshape-export-cache.json`. An unchanged run uses one API request to check the
+microversion and does not recreate translations or download files.
 
 ### Complete workflow
 
@@ -148,8 +163,8 @@ jobs:
 The workflow commits the following generated content:
 
 - `<project>/README.md` with model links, images, and the bill of materials
-- `<project>/assembly/` with STEP, STL, preview, and exploded-view images
-- `<project>/parts/` with STL, STEP, and 3MF files for printable parts
+- `<project>/assembly/` with STEP, preview, and exploded-view images
+- `<project>/parts/` with 3MF files for printable parts
 
 Repositories with branch protection must allow the GitHub Actions bot to push,
 or the final step must be changed to create a pull request instead.

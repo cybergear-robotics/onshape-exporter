@@ -4,7 +4,7 @@ import json
 from decimal import Decimal, InvalidOperation
 from typing import Any, Iterable
 
-from .models import BomTable, PartRef
+from .models import BomColumn, BomTable, DEFAULT_BOM_COLUMNS, PartRef
 
 
 def _display(value: Any) -> Any:
@@ -212,25 +212,26 @@ def match_parts(rows: Iterable[dict[str, Any]], parts: list[PartRef]) -> list[Pa
     return selected
 
 
-_OUTPUT_COLUMNS = (
-    ("Item", "item"),
-    ("Component", "title1"),
-    ("Description", "description"),
-    ("Quantity", "quantity"),
-    ("Material", "material"),
-    ("Mass", "mass"),
-)
-
-
-def _output_value(row: dict[str, Any], title: str, property_name: str) -> Any:
-    direct = next((value for key, value in row.items() if key.casefold() == title.casefold()), None)
+def _output_value(row: dict[str, Any], column: BomColumn) -> Any:
+    direct = next(
+        (value for key, value in row.items() if key.casefold() == column.property.casefold()),
+        None,
+    )
     if direct is not None:
         return direct
-    return row.get(f"__property:{property_name}", "")
+    property_key = f"__property:{column.property}".casefold()
+    property_value = next(
+        (value for key, value in row.items() if key.casefold() == property_key), None
+    )
+    if property_value is not None:
+        return property_value
+    return next(
+        (value for key, value in row.items() if key.casefold() == column.title.casefold()), ""
+    )
 
 
-def _format_output_value(title: str, value: Any) -> Any:
-    if title != "Quantity" or value in (None, ""):
+def _format_output_value(property_name: str, value: Any) -> Any:
+    if property_name.casefold() != "quantity" or value in (None, ""):
         return value
     try:
         quantity = Decimal(str(value))
@@ -241,14 +242,16 @@ def _format_output_value(title: str, value: Any) -> Any:
     return value
 
 
-def render_bom(table: BomTable) -> str:
-    titles = [title for title, _ in _OUTPUT_COLUMNS]
+def render_bom(
+    table: BomTable, columns: tuple[BomColumn, ...] = DEFAULT_BOM_COLUMNS
+) -> str:
+    titles = [column.title for column in columns]
     lines = ["# Bill of Materials", "", "| " + " | ".join(titles) + " |"]
     lines.append("| " + " | ".join("---" for _ in titles) + " |")
     for row in table.rows:
         values = [
-            _format_output_value(title, _output_value(row, title, property_name))
-            for title, property_name in _OUTPUT_COLUMNS
+            _format_output_value(column.property, _output_value(row, column))
+            for column in columns
         ]
         lines.append("| " + " | ".join(_md(value) for value in values) + " |")
     lines.append("")

@@ -109,6 +109,15 @@ class OnshapeClient:
             },
         )
 
+    def get_current_microversion(self, did: str, wid: str) -> str:
+        value = self.get_json(f"documents/d/{did}/w/{wid}/currentmicroversion")
+        microversion = (
+            value.get("microversion") or value.get("microversionId") or value.get("id")
+        )
+        if not microversion:
+            raise OnshapeError("Current microversion response contains no id")
+        return str(microversion)
+
     def get_bom(self, did: str, wvm: str, wvmid: str, eid: str) -> dict[str, Any]:
         return self.get_json(
             f"assemblies/d/{did}/{wvm}/{wvmid}/e/{eid}/bom",
@@ -169,7 +178,7 @@ class OnshapeClient:
                 raise OnshapeError(f"Translation {translation_id} timed out after {timeout_seconds}s")
             time.sleep(interval)
             current = self.get_json(f"translations/{translation_id}")
-            interval = min(interval * 1.4, 15.0)
+            interval = min(interval * 1.4, 60.0)
         if str(current.get("requestState")).upper() == "FAILED":
             raise OnshapeError(
                 f"Translation {translation_id} failed: {current.get('failureReason', 'unknown reason')}"

@@ -1,6 +1,7 @@
 import pytest
 
 from onshape_export.bom import match_parts, normalize_bom, render_bom, select_rows
+from onshape_export.models import BomColumn
 
 
 def test_normalize_and_filter_bom() -> None:
@@ -103,3 +104,23 @@ def test_markdown_uses_requested_columns_and_title_mapping() -> None:
     assert "Automatically generated" not in markdown
     assert "Title 1" not in markdown
     assert "Title 2" not in markdown
+
+
+def test_markdown_columns_can_be_selected_renamed_and_reordered() -> None:
+    table = normalize_bom(
+        {
+            "headers": [
+                {"id": "name", "name": "Title 1", "propertyName": "title1"},
+                {"id": "quantity", "name": "Quantity", "propertyName": "quantity"},
+            ],
+            "rows": [{"headerIdToValue": {"name": "Bracket", "quantity": 2.0}}],
+        }
+    )
+
+    markdown = render_bom(
+        table,
+        (BomColumn("quantity", "Anzahl"), BomColumn("title1", "Bauteil")),
+    )
+
+    assert "| Anzahl | Bauteil |" in markdown
+    assert "| 2 | Bracket |" in markdown

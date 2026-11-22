@@ -13,7 +13,6 @@ def update_readme(
     bom_markdown: str,
     onshape_url: str,
     step_path: str,
-    stl_path: str,
     parts_path: str,
     exploded_views: list[tuple[str, str]] | None = None,
 ) -> None:
@@ -25,8 +24,7 @@ def update_readme(
         "",
         f"- [Onshape document]({onshape_url})",
         f"- [Complete assembly as STEP]({step_path})",
-        f"- [Interactive 3D view as STL]({stl_path})",
-        f"- [STL, STEP, and 3MF files for printable parts]({parts_path})",
+        f"- [3MF files for printable parts]({parts_path})",
     ]
     if exploded_views:
         lines.extend(["", "### Exploded Views"])

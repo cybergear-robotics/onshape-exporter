@@ -59,14 +59,16 @@ def main(argv: list[str] | None = None) -> int:
                     f"{config.ref.wvm}/{config.ref.wvm_id}/e/{config.ref.element_id}"
                 ),
                 relative_to_readme(args.output / "assembly" / "complete-assembly.step"),
-                relative_to_readme(args.output / "assembly" / "complete-assembly.stl"),
                 relative_to_readme(args.output / "parts"),
                 exploded_views,
             )
             if not args.readme.is_file():
                 raise OSError(f"README was not created at {args.readme.resolve()}")
             logging.info("README updated at %s", args.readme.resolve())
-        logging.info("Backup created at %s (%d files)", result.output_dir, len(result.files))
+        if result.cached:
+            logging.info("Backup is already current at %s", result.output_dir)
+        else:
+            logging.info("Backup created at %s (%d files)", result.output_dir, len(result.files))
         return 0
     except (ValueError, OSError, OnshapeError) as exc:
         logging.error("%s", exc)

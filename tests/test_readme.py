@@ -11,7 +11,6 @@ def test_update_readme_is_idempotent(tmp_path) -> None:
         bom,
         "https://cad.onshape.com/documents/did/w/wid/e/eid",
         "assembly.step",
-        "assembly.stl",
         "parts/",
         [("Exploded 1", "exploded/1.png")],
     )
@@ -22,7 +21,6 @@ def test_update_readme_is_idempotent(tmp_path) -> None:
         bom,
         "https://cad.onshape.com/documents/did/w/wid/e/eid",
         "assembly.step",
-        "assembly.stl",
         "parts/",
         [("Exploded 1", "exploded/1.png")],
     )
@@ -30,7 +28,7 @@ def test_update_readme_is_idempotent(tmp_path) -> None:
     assert "![Onshape assembly](preview.png)" in first
     assert "![Exploded 1](exploded/1.png)" in first
     assert "[Complete assembly as STEP](assembly.step)" in first
-    assert "[Interactive 3D view as STL](assembly.stl)" in first
+    assert "[3MF files for printable parts](parts/)" in first
     assert "## Bill of Materials" in first
     assert "https://cad.onshape.com/documents/did/w/wid/e/eid" in first
     assert "| 1 | Screw |" in first

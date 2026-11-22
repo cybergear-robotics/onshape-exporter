@@ -21,7 +21,23 @@ class ExportSettings:
     units: str = "millimeter"
     mesh_resolution: str = "fine"
     translation_timeout_seconds: int = 900
-    poll_interval_seconds: float = 3.0
+    poll_interval_seconds: float = 15.0
+
+
+@dataclass(frozen=True)
+class BomColumn:
+    property: str
+    title: str
+
+
+DEFAULT_BOM_COLUMNS = (
+    BomColumn("item", "Item"),
+    BomColumn("title1", "Component"),
+    BomColumn("description", "Description"),
+    BomColumn("quantity", "Quantity"),
+    BomColumn("material", "Material"),
+    BomColumn("mass", "Mass"),
+)
 
 
 @dataclass(frozen=True)
@@ -29,6 +45,7 @@ class Config:
     ref: DocumentRef
     api_version: str
     export: ExportSettings
+    bom_columns: tuple[BomColumn, ...] = DEFAULT_BOM_COLUMNS
 
 
 @dataclass
@@ -68,3 +85,4 @@ class BackupResult:
     exploded_views: list[tuple[str, Path]] = field(default_factory=list)
     bom_markdown: str = ""
     warnings: list[str] = field(default_factory=list)
+    cached: bool = False
