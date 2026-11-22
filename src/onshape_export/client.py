@@ -118,6 +118,19 @@ class OnshapeClient:
             raise OnshapeError("Current microversion response contains no id")
         return str(microversion)
 
+    def get_latest_version(self, did: str) -> dict[str, Any]:
+        value = self.request(
+            "GET", f"documents/d/{did}/versions", params={"offset": 0, "limit": 1}
+        ).json()
+        if isinstance(value, dict):
+            value = value.get("items") or value.get("versions") or []
+        if not isinstance(value, list) or not value or not isinstance(value[0], dict):
+            raise OnshapeError("The document contains no named version")
+        version = value[0]
+        if not version.get("id"):
+            raise OnshapeError("Latest version response contains no id")
+        return version
+
     def get_bom(self, did: str, wvm: str, wvmid: str, eid: str) -> dict[str, Any]:
         return self.get_json(
             f"assemblies/d/{did}/{wvm}/{wvmid}/e/{eid}/bom",

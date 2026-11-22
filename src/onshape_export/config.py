@@ -61,6 +61,9 @@ def load_config(path: Path) -> Config:
     )
     if ref.wvm != "w":
         raise ValueError("The configured source must currently be a workspace URL (/w/).")
+    update_mode = str(export.get("update_mode", "microversion")).strip().lower()
+    if update_mode not in {"microversion", "version"}:
+        raise ValueError("export.update_mode must be 'microversion' or 'version'")
     return Config(
         ref=ref,
         api_version=str(onshape.get("api_version", "v12")),
@@ -71,6 +74,7 @@ def load_config(path: Path) -> Config:
             mesh_resolution=str(export.get("mesh_resolution", "fine")).lower(),
             translation_timeout_seconds=int(export.get("translation_timeout_seconds", 900)),
             poll_interval_seconds=float(export.get("poll_interval_seconds", 15)),
+            update_mode=update_mode,
         ),
         bom_columns=bom_columns,
     )

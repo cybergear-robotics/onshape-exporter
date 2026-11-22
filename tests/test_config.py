@@ -43,3 +43,19 @@ columns = [
         ("title1", "Bauteil"),
     ]
     assert config.export.poll_interval_seconds == 15
+
+
+def test_loads_version_update_mode(tmp_path: Path) -> None:
+    path = tmp_path / "onshape-export.toml"
+    path.write_text(
+        """
+[onshape]
+document_url = "https://cad.onshape.com/documents/abc123/w/def456/e/789abc"
+
+[export]
+update_mode = "version"
+""",
+        encoding="utf-8",
+    )
+
+    assert load_config(path).export.update_mode == "version"

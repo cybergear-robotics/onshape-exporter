@@ -22,6 +22,7 @@ class ExportSettings:
     mesh_resolution: str = "fine"
     translation_timeout_seconds: int = 900
     poll_interval_seconds: float = 15.0
+    update_mode: str = "microversion"
 
 
 @dataclass(frozen=True)
@@ -86,3 +87,4 @@ class BackupResult:
     bom_markdown: str = ""
     warnings: list[str] = field(default_factory=list)
     cached: bool = False
+    source_ref: DocumentRef | None = None

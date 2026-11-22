@@ -68,6 +68,8 @@ units = "millimeter"
 mesh_resolution = "fine"
 translation_timeout_seconds = 900
 poll_interval_seconds = 15
+# "microversion" exports workspace changes; "version" exports only new named versions.
+update_mode = "microversion"
 
 [bom]
 columns = [
@@ -81,9 +83,11 @@ columns = [
 ```
 
 The column order in `bom.columns` is also used in the generated Markdown. The
-exporter stores the last exported workspace microversion in
-`.onshape-export-cache.json`. An unchanged run uses one API request to check the
-microversion and does not recreate translations or download files.
+exporter stores the last exported source revision in `.onshape-export-cache.json`.
+An unchanged run uses one API request to check the revision and does not recreate
+translations or download files. Set `update_mode = "version"` to export the
+latest named Onshape version only when a new version has been created. The
+default `microversion` mode tracks every workspace change.
 
 ### Complete workflow
 

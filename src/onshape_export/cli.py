@@ -42,6 +42,7 @@ def main(argv: list[str] | None = None) -> int:
         result = create_backup(client, config, args.output)
         if args.update_readme:
             readme_parent = args.readme.resolve().parent
+            source_ref = result.source_ref or config.ref
 
             def relative_to_readme(path: Path) -> str:
                 return Path(os.path.relpath(path.resolve(), readme_parent)).as_posix()
@@ -55,8 +56,8 @@ def main(argv: list[str] | None = None) -> int:
                 relative_to_readme(args.output / "assembly" / "preview.png"),
                 result.bom_markdown,
                 (
-                    f"{config.ref.base_url}/documents/{config.ref.document_id}/"
-                    f"{config.ref.wvm}/{config.ref.wvm_id}/e/{config.ref.element_id}"
+                    f"{source_ref.base_url}/documents/{source_ref.document_id}/"
+                    f"{source_ref.wvm}/{source_ref.wvm_id}/e/{source_ref.element_id}"
                 ),
                 relative_to_readme(args.output / "assembly" / "complete-assembly.step"),
                 relative_to_readme(args.output / "parts"),

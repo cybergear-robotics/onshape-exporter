@@ -60,3 +60,20 @@ def test_current_microversion_uses_onshape_response_field(monkeypatch) -> None:
     monkeypatch.setattr(client, "get_json", lambda path: {"microversion": "mid"})
 
     assert client.get_current_microversion("did", "wid") == "mid"
+
+
+def test_latest_version_requests_only_one_version(monkeypatch) -> None:
+    client = OnshapeClient("https://cad.onshape.com", "access", "secret")
+
+    class Response:
+        def json(self):
+            return [{"id": "vid", "name": "Release 1"}]
+
+    def request(method, path, **kwargs):
+        assert (method, path) == ("GET", "documents/d/did/versions")
+        assert kwargs["params"]["limit"] == 1
+        return Response()
+
+    monkeypatch.setattr(client, "request", request)
+
+    assert client.get_latest_version("did")["id"] == "vid"

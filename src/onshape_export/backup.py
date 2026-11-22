@@ -11,7 +11,7 @@ from typing import Any
 
 from .bom import match_parts, normalize_bom, parts_from_assembly, render_bom, select_rows
 from .client import OnshapeClient
-from .models import BackupResult, Config, PartRef
+from .models import BackupResult, Config, DocumentRef, PartRef
 
 
 LOG = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ LOG = logging.getLogger(__name__)
 _MANAGED_DIRECTORIES = ("assembly", "parts")
 _MARKER_NAME = ".onshape-export-managed"
 _CACHE_NAME = ".onshape-export-cache.json"
-_CACHE_VERSION = 1
+_CACHE_VERSION = 2
 
 
 def _safe_name(value: str) -> str:
@@ -66,6 +66,7 @@ def _config_signature(config: Config) -> str:
             "product_value": config.export.product_value,
             "units": config.export.units,
             "mesh_resolution": config.export.mesh_resolution,
+            "update_mode": config.export.update_mode,
         },
         "bom_columns": [asdict(column) for column in config.bom_columns],
         "formats": {"assembly": ["STEP"], "parts": ["3MF"]},
@@ -75,7 +76,7 @@ def _config_signature(config: Config) -> str:
 
 
 def _load_cached_result(
-    output: Path, microversion: str, signature: str
+    output: Path, revision: str, signature: str, source_ref: DocumentRef
 ) -> BackupResult | None:
     def cached_path(value: str) -> Path | None:
         relative = Path(value)
@@ -92,7 +93,7 @@ def _load_cached_result(
             return None
         if (
             cache.get("version") != _CACHE_VERSION
-            or cache.get("microversion") != microversion
+            or cache.get("revision") != revision
             or cache.get("signature") != signature
         ):
             return None
@@ -133,18 +134,19 @@ def _load_cached_result(
         exploded_views=exploded_views,
         bom_markdown=bom_markdown,
         cached=True,
+        source_ref=source_ref,
     )
 
 
 def _write_cache(
-    output: Path, result: BackupResult, microversion: str, signature: str
+    output: Path, result: BackupResult, revision: str, signature: str
 ) -> None:
     def relative(path: Path) -> str:
         return path.relative_to(output).as_posix()
 
     cache: dict[str, Any] = {
         "version": _CACHE_VERSION,
-        "microversion": microversion,
+        "revision": revision,
         "signature": signature,
         "files": [relative(path) for path in result.files],
         "exploded_views": [
@@ -160,18 +162,30 @@ def _write_cache(
     temporary.replace(cache_path)
 
 
-def create_backup(client: OnshapeClient, config: Config, output: Path) -> BackupResult:
+def _resolve_source(client: OnshapeClient, config: Config) -> tuple[str, DocumentRef]:
     ref = config.ref
+    if config.export.update_mode == "version":
+        version = client.get_latest_version(ref.document_id)
+        version_id = str(version["id"])
+        return (
+            f"version:{version_id}",
+            DocumentRef(ref.base_url, ref.document_id, "v", version_id, ref.element_id),
+        )
     microversion = client.get_current_microversion(ref.document_id, ref.wvm_id)
+    return f"microversion:{microversion}", ref
+
+
+def create_backup(client: OnshapeClient, config: Config, output: Path) -> BackupResult:
+    revision, ref = _resolve_source(client, config)
     signature = _config_signature(config)
-    cached = _load_cached_result(output, microversion, signature)
+    cached = _load_cached_result(output, revision, signature, ref)
     if cached is not None:
-        LOG.info("Onshape workspace is unchanged; using cached export")
+        LOG.info("Onshape source revision is unchanged; using cached export")
         return cached
 
     _prepare_output(output)
     settings = config.export
-    result = BackupResult(output)
+    result = BackupResult(output, source_ref=ref)
 
     assembly = client.get_assembly(
         ref.document_id, ref.wvm, ref.wvm_id, ref.element_id
@@ -249,5 +263,5 @@ def create_backup(client: OnshapeClient, config: Config, output: Path) -> Backup
             resolution=settings.mesh_resolution,
         )
         result.files.append(target)
-    _write_cache(output, result, microversion, signature)
+    _write_cache(output, result, revision, signature)
     return result
